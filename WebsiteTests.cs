@@ -111,6 +111,33 @@ public class WebsiteTests
     }
 
 
+    [Test]
+    public void ForgotPassword_SubmitEmail_ShowsConfirmation()
+    {
+        driver.Navigate().GoToUrl(HomeUrl + "/forgot_password");
+        driver.FindElement(By.Id("email")).SendKeys("e.vretik2026@gmail.com");
+        driver.FindElement(By.Id("form_submit")).Click();
+        wait.Until(d => d.Url.Contains("/email_sent"));
+        Assert.That(driver.PageSource, Does.Contain("Your e-mail's been sent!"));
+    }
+
+    [Test]
+    public void Typos_CheckText_HasCorrectSpelling()
+    {
+        driver.Navigate().GoToUrl(HomeUrl + "/typos");
+        var text = driver.FindElement(By.CssSelector(".example")).Text;
+        Assert.That(text, Does.Contain("Sometimes you'll see a typo, other times you won't."));
+    }
+
+    [Test]
+    public void BasicAuth_ValidCredentials_ShowsSuccessMessage()
+    {
+        driver.Navigate().GoToUrl("https://admin:admin@the-internet.herokuapp.com/basic_auth");
+        var message = driver.FindElement(By.CssSelector(".example p"));
+        Assert.That(message.Text, Does.Contain("Congratulations! You must have the proper credentials."));
+    }
+
+
     [TearDown]
     public void TearDown()
     {
