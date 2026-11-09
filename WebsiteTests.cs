@@ -11,11 +11,20 @@ public class WebsiteTests
     private const string HomeUrl = "https://the-internet.herokuapp.com";
     private IWebDriver driver = null!;
     private WebDriverWait wait = null!;
+    private string downloadDirectory = null!;
 
     [SetUp]
     public void SetUp()
     {
-        driver = new ChromeDriver();
+        var options = new ChromeOptions();
+        if (TestContext.CurrentContext.Test.MethodName == nameof(FileDownload_ClickFile_FileIsSaved))
+        {
+            downloadDirectory = Path.Combine(AppContext.BaseDirectory, "downloads", Guid.NewGuid().ToString());
+            Directory.CreateDirectory(downloadDirectory);
+            options.AddUserProfilePreference("download.default_directory", downloadDirectory);
+            options.AddUserProfilePreference("download.prompt_for_download", false);
+        }
+        driver = new ChromeDriver(options);
         driver.Manage().Window.Maximize();
         wait = new WebDriverWait(driver, TimeSpan.FromSeconds(15));
     }
@@ -110,12 +119,11 @@ public class WebsiteTests
         Assert.That(result.Text, Is.EqualTo("Hello World!"));
     }
 
-
     [Test]
     public void ForgotPassword_SubmitEmail_ShowsConfirmation()
     {
         driver.Navigate().GoToUrl(HomeUrl + "/forgot_password");
-        driver.FindElement(By.Id("email")).SendKeys("e.vretik2026@gmail.com");
+        driver.FindElement(By.Id("email")).SendKeys("test@vretik.com");
         driver.FindElement(By.Id("form_submit")).Click();
         wait.Until(d => d.Url.Contains("/email_sent"));
         Assert.That(driver.PageSource, Does.Contain("Your e-mail's been sent!"));
@@ -137,6 +145,18 @@ public class WebsiteTests
         Assert.That(message.Text, Does.Contain("Congratulations! You must have the proper credentials."));
     }
 
+    [Test]
+    public void FileDownload_ClickFile_FileIsSaved()
+    {
+        driver.Navigate().GoToUrl(HomeUrl + "/download");
+        var links = driver.FindElements(By.CssSelector(".example a[href$='.txt']"));
+        Assert.That(links, Is.Not.Empty, "На сторінці немає текстових файлів для завантаження.");
+        var fileName = links[0].Text;
+        links[0].Click();
+        var filePath = Path.Combine(downloadDirectory, fileName);
+        wait.Until(_ => File.Exists(filePath) && !File.Exists(filePath + ".crdownload"));
+        Assert.That(File.Exists(filePath), Is.True);
+    }
 
     [TearDown]
     public void TearDown()
